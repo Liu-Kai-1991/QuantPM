@@ -16,3 +16,6 @@ libraryDependencies += "com.typesafe" % "config" % "1.3.1"
 
 // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
 libraryDependencies += "org.apache.httpcomponents" % "httpclient" % "4.5.3"
+
+// https://mvnrepository.com/artifact/commons-io/commons-io
+libraryDependencies += "commons-io" % "commons-io" % "2.5"
