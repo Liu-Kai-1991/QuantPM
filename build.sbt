@@ -19,3 +19,7 @@ libraryDependencies += "org.apache.httpcomponents" % "httpclient" % "4.5.3"
 
 // https://mvnrepository.com/artifact/commons-io/commons-io
 libraryDependencies += "commons-io" % "commons-io" % "2.5"
+
+// https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.9.1"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.9.1"

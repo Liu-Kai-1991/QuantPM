@@ -12,7 +12,10 @@ import org.apache.commons.io.IOUtils
 object HttpClientUtil {
   private val httpclient: CloseableHttpClient = HttpClients.createDefault
 
-  case class WebPage private(statusCode: Int, content: String)
+  case class WebPage private(statusCode: Int, content: String){
+    def good: Boolean = statusCode<300
+    def bad: Boolean = !good: Boolean
+  }
 
   def getWebPage(url: String): WebPage = {
     val httpGet = new HttpGet(url)

@@ -7,7 +7,7 @@ import scala.collection.immutable._
 import scala.collection.mutable
 
 class MySQLConnection private(
-  val args: (String /* url */ , String /* username */ , String /* password */ )
+  private val args: (String /* url */ , String /* username */ , String /* password */ )
 ) {
   private val connection = DriverManager.getConnection(args._1, args._2, args._3)
   private val statement = connection.createStatement()
