@@ -19,3 +19,6 @@ libraryDependencies += "org.apache.httpcomponents" % "httpclient" % "4.5.3"
 
 // https://mvnrepository.com/artifact/commons-io/commons-io
 libraryDependencies += "commons-io" % "commons-io" % "2.5"
+
+// https://mvnrepository.com/artifact/args4j/args4j
+libraryDependencies += "args4j" % "args4j" % "2.33"

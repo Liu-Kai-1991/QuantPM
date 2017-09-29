@@ -4,8 +4,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.ConfigFactory
-import org.mongodb.scala.{Document, MongoClient, MongoCollection, Observable}
-
+import org.bson.codecs.configuration.CodecRegistry
+import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase, Observable}
+import org.mongodb.scala.bson.codecs.Macros._
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -16,19 +17,16 @@ object MongoDBConnection {
   private val config = ConfigFactory.parseFile(new File(configPath))
   private val serverUrl = config.getString("serverUrl")
   private val mongoClient: MongoClient = MongoClient(serverUrl)
-  private val collectionMap: mutable.Map[(String, String), MongoCollection[Document]] = mutable.Map()
 
-  def getCollection(collection: String, database: String): MongoCollection[Document] = {
-    val args = (database, collection)
-    def createNew = {
-      val result = mongoClient.getDatabase(database).getCollection(collection)
-      collectionMap.put(args, result)
-      result
-    }
-    if (collectionMap.contains(args)) collectionMap(args) else createNew
-  }
+  def getDatabase(dbName: String): MongoDatabase = mongoClient.getDatabase(dbName)
 
-  def getCollection(collection: String): MongoCollection[Document] =
+  def getDefaultDatabase: MongoDatabase = getDatabase(defaultDatabase)
+
+  def getCollection(
+  collection: String,
+  database: String): MongoCollection[Document] = mongoClient.getDatabase(database).getCollection(collection)
+
+  def getCollection(collection: String, codecRegistry: Option[CodecRegistry] = None): MongoCollection[Document] =
     getCollection(defaultDatabase, collection)
 }
 

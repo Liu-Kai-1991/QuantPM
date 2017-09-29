@@ -12,6 +12,7 @@ case class Logger(c: Class[_]){
   def debug(message: String): Unit = writeLog(Log.DEBUG, message)
   def info(message: String): Unit = writeLog(Log.INFO, message)
   def warn(message: String): Unit = writeLog(Log.WARN, message)
+  def error(message: String): Unit = writeLog(Log.ERROR, message)
 }
 
 trait Log {
@@ -20,7 +21,7 @@ trait Log {
 
 
 object Log extends Enumeration {
-  val INFO, WARN, DEBUG = Value
+  val INFO, WARN, DEBUG, ERROR = Value
   type LogType = Value
 
   private var logLevel: LogType = INFO
@@ -43,6 +44,7 @@ object Log extends Enumeration {
       val backgroundColor = logType match {
         case INFO => AnsiColor.BOLD
         case WARN => AnsiColor.YELLOW_B
+        case ERROR => AnsiColor.RED_B
         case DEBUG => ""
       }
 
