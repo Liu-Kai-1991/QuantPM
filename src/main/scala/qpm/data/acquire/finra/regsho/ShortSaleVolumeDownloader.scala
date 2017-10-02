@@ -6,6 +6,8 @@ import qpm.system._
 import org.kohsuke.args4j.{Option => CmdOption}
 import qpm.data.connection.MongoDBConnectionImplicits._
 
+import scala.util.Try
+
 object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
   @CmdOption(name = "-to", required = false, usage = "yyyyMMdd", handler = classOf[LocalDateHandler])
   var toDate: LocalDate = LocalDate.now()
@@ -26,18 +28,26 @@ object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmd
         if (from == to) acc :+ to else collectDates(from.plusDays(1), to, acc :+ from)
       collectDates(fromDate, toDate, Vector())
     }
-    val permutation = dates.cross(ShortSaleVolume.exchangeList)
+    val permutation = dates.cross(ShortSaleVolume.sourceList.values)
 
-    val insertResult = permutation.map{
+    permutation.foreach{
       case (date, exchange) =>
-        val (statusCode, records) = ShortSaleVolume.getData(exchange, date)
-        if (statusCode < 300) {
-          val results = if (records.nonEmpty) RegShoRecord.putMany(records).results else Seq()
-          log.info(results.toString)
-          (date, exchange, statusCode, results)
+        if (RegShoRecord.countInDateAndMarket(date.asDate, exchange)>0){
+          log.warn(s"Data for $exchange at $date already exists")
         } else {
-          log.error(s"Download data from $exchange for $date faild with $statusCode")
-          (date, exchange, statusCode, Vector())
+          val (statusCode, records) = ShortSaleVolume.getData(exchange, date)
+          if (statusCode < 300) {
+            log.info(s"Download data from $exchange for $date successfully")
+            val results = Try{if (records.nonEmpty) RegShoRecord.putMany(records).results else Seq()}.toEither
+            results match {
+              case Left(e) =>
+                log.error(s"Insert data from $exchange for $date to database failed")
+                e.getStackTrace.foreach(trace => log.error(trace.toString))
+              case Right(result) => log.info(result.toString)
+            }
+          } else {
+            log.error(s"Download data from $exchange for $date failed with $statusCode")
+          }
         }
     }
   }

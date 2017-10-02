@@ -8,13 +8,9 @@ import qpm.data.acquire.finra.regsho.{RegShoRecord, ShortSaleVolume}
 import qpm.system.Log
 
 object MongoDBConnectionTest extends App with Log{
-  val collection = MongoDBConnection.getCollection("test", "test")
-  println(collection.find().headResult.toString)
-}
-
-object InsertTest extends App{
-  val record = RegShoRecord(Calendar.getInstance.getTime, "fake", 1, 1, 1, "fake")
-  RegShoRecord.put(record).printResults()
+  val collection = RegShoRecord.collection
+  val docs = collection.find().results
+  println(docs.size)
 }
 
 object CaseClassTest extends App{
@@ -29,6 +25,6 @@ object CaseClassTest extends App{
   val database: MongoDatabase = mongoClient.getDatabase("test").withCodecRegistry(codecRegistry)
   val collection: MongoCollection[RegShoRecord] = database.getCollection("test")
 
-  val person: RegShoRecord = RegShoRecord(Calendar.getInstance.getTime, "fake", 1, 1, 1, "fake")
+  val person: RegShoRecord = RegShoRecord(Calendar.getInstance.getTime, "fake", 1, 1, 1, "fake", "fake")
   collection.insertOne(person).printResults()
 }
