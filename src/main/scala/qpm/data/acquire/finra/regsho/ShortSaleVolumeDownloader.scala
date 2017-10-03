@@ -6,6 +6,8 @@ import qpm.system._
 import org.kohsuke.args4j.{Option => CmdOption}
 import qpm.data.connection.MongoDBConnectionImplicits._
 
+import scala.collection.parallel.ForkJoinTaskSupport
+import scala.concurrent.forkjoin.ForkJoinPool
 import scala.util.Try
 
 object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
@@ -13,6 +15,8 @@ object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
   var toDate: LocalDate = LocalDate.now()
   @CmdOption(name = "-from", required = false, usage = "yyyyMMdd", handler = classOf[LocalDateOptionHandler])
   var fromDate: Option[LocalDate] = None
+  @CmdOption(name = "-threadNum", required = false, usage = "Integer")
+  var threadNum: Int = 1
 }
 
 object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmdLine) with Log{
@@ -28,9 +32,10 @@ object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmd
         if (from == to) acc :+ to else collectDates(from.plusDays(1), to, acc :+ from)
       collectDates(fromDate, toDate, Vector())
     }
-    val permutation = dates.cross(ShortSaleVolume.sourceList.values)
+    val permutation = dates.cross(ShortSaleVolume.sourceList.values).par
+    permutation.tasksupport = new ForkJoinTaskSupport(new ForkJoinPool(cmdLine.threadNum))
 
-    permutation.foreach{
+    permutation.par.foreach{
       case (date, exchange) =>
         if (RegShoRecord.countInDateAndMarket(date.asDate, exchange)>0){
           log.warn(s"Data for $exchange at $date already exists")
