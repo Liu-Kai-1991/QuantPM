@@ -1,0 +1,50 @@
+group 'com.kai.qpm'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/mysql/mysql-connector-java
+    compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.8-dmr'
+
+    // https://mvnrepository.com/artifact/org.mongodb.scala/mongo-scala-driver_2.12
+    compile group: 'org.mongodb.scala', name: 'mongo-scala-driver_2.12', version: '2.1.0'
+
+    // https://mvnrepository.com/artifact/com.typesafe/config
+    compile group: 'com.typesafe', name: 'config', version: '1.3.1'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+
+    // https://mvnrepository.com/artifact/args4j/args4j
+    compile group: 'args4j', name: 'args4j', version: '2.33'
+
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
+}
+
+mainClassName = "qpm.system.Welcome"
+
+project.file('log').mkdirs()
+
+task shortSaleVolumeDownloader(type: CreateStartScripts) {
+    mainClassName = "qpm.data.acquire.finra.regsho.ShortSaleVolumeDownloader"
+    applicationName = "ShortSaleVolumeDownloader"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+}
+
+applicationDistribution.into("bin") {
+    from(shortSaleVolumeDownloader)
+    fileMode = 0755
+}
