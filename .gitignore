@@ -1,5 +1,9 @@
 # Created by .ignore support plugin (hsz.mobi)
 /config/
 /.idea/
-/project/target
-/target/
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+log/
+out/

@@ -7,7 +7,7 @@ import org.kohsuke.args4j.{Option => CmdOption}
 import qpm.data.connection.MongoDBConnectionImplicits._
 
 import scala.collection.parallel.ForkJoinTaskSupport
-import scala.concurrent.forkjoin.ForkJoinPool
+import java.util.concurrent.ForkJoinPool
 import scala.util.Try
 
 object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{

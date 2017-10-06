@@ -1,21 +1,17 @@
 package qpm.data.connection
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
-import com.typesafe.config.ConfigFactory
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase, Observable}
-import org.mongodb.scala.bson.codecs.Macros._
-import scala.collection.mutable
+import qpm.system.configuration.MongoDBConfiguration
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object MongoDBConnection {
   private val defaultDatabase = "qpm"
-  private val configPath = "config/MongoDb.conf"
-  private val config = ConfigFactory.parseFile(new File(configPath))
-  private val serverUrl = config.getString("serverUrl")
+  private val serverUrl = MongoDBConfiguration.serverUrl
   private val mongoClient: MongoClient = MongoClient(serverUrl)
 
   def getDatabase(dbName: String): MongoDatabase = mongoClient.getDatabase(dbName)

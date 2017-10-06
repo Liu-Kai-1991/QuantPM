@@ -1,9 +1,9 @@
 package qpm.data.connection
 
 import java.sql.{DriverManager, ResultSet}
-import java.io.File
-import com.typesafe.config.ConfigFactory
-import scala.collection.immutable._
+
+import qpm.system.configuration.MySQLConfiguration
+
 import scala.collection.mutable
 
 class MySQLConnection private(
@@ -26,12 +26,10 @@ object MySQLConnection {
   private val useJDBCCompliantTimezoneShift = "useJDBCCompliantTimezoneShift=true"
   private val useLegacyDatetimeCode = "useLegacyDatetimeCode=false"
   private val serverTimezone = "serverTimezone=UTC"
-  private val configPath = "config/MySql.conf"
-  private val config = ConfigFactory.parseFile(new File(configPath))
-  private val serverUrl = config.getString("serverUrl")
-  private val username = config.getString("username")
-  private val password = config.getString("password")
   private val connectionMap: mutable.Map[(String, String, String), MySQLConnection] = mutable.Map()
+  private val serverUrl = MySQLConfiguration.serverUrl
+  private val username = MySQLConfiguration.username
+  private val password = MySQLConfiguration.password
 
   def apply(database: String): MySQLConnection = {
     val url = s"jdbc:mysql://$serverUrl/$database?$useUnicode&$useJDBCCompliantTimezoneShift&" +

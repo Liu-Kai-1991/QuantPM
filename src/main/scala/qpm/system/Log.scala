@@ -2,9 +2,11 @@ package qpm.system
 
 import java.util.Calendar
 import java.text.SimpleDateFormat
+
 import scala.io.AnsiColor
 import Log.LogType
-import java.io.FileOutputStream
+import java.io.{File, FileOutputStream}
+import java.nio.file.{Files, Paths}
 
 case class Logger(c: Class[_]){
   def writeLog(logType: LogType, message: String): Unit =
@@ -26,12 +28,16 @@ object Log extends Enumeration {
 
   private var logLevel: LogType = INFO
 
+  if (!Files.exists(Paths.get("/log"))){
+    new File("log").mkdir()
+  }
+
   def setLogLevel(logType: LogType): Unit = {
     logLevel = logType
   }
 
   private val dateFormat  = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-  private val logFileName = s"target/archive/${new SimpleDateFormat("yyyyMMdd-HHmmss").
+  private val logFileName = s"log/${new SimpleDateFormat("yyyyMMdd-HHmmss").
     format(Calendar.getInstance.getTime)}.log"
 
   private object LogFileLocker
