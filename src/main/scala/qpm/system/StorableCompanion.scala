@@ -13,10 +13,10 @@ trait StorableCompanion[T <: Storable] {
   val name: String = this.getClass.getName.dropRight(1)
   def collection: MongoCollection[T]
   def codecRegistry: CodecRegistry
-  def put(regShoRecord: T): SingleObservable[Completed] =
-    collection.insertOne(regShoRecord)
-  def putMany(regShoRecords: Seq[T]): SingleObservable[Completed] =
-    collection.insertMany(regShoRecords, insertManyOptions)
+  def put(storable: T): SingleObservable[Completed] =
+    collection.insertOne(storable)
+  def putMany(storables: Seq[T]): SingleObservable[Completed] =
+    collection.insertMany(storables, insertManyOptions)
 }
 
 trait Storable{

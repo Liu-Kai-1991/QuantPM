@@ -8,6 +8,9 @@ import qpm.data.connection.MongoDBConnectionImplicits._
 
 import scala.collection.parallel.ForkJoinTaskSupport
 import java.util.concurrent.ForkJoinPool
+import scala.collection.immutable._
+import qpm.data.acquire.HttpClientUtil
+
 import scala.util.Try
 
 object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
@@ -40,7 +43,8 @@ object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmd
         if (RegShoRecord.countInDateAndMarket(date.asDate, exchange)>0){
           log.warn(s"Data for $exchange at $date already exists")
         } else {
-          val (statusCode, records) = ShortSaleVolume.getData(exchange, date)
+          val (statusCode, records) = Try(ShortSaleVolume.getData(exchange, date)).toOption
+            .getOrElse((HttpClientUtil.timeOutErrorCode, Vector()))
           if (statusCode < 300) {
             log.info(s"Download data from $exchange for $date successfully")
             val results = Try{if (records.nonEmpty) RegShoRecord.putMany(records).results else Seq()}.toEither
