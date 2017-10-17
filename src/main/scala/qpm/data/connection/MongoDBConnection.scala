@@ -28,7 +28,7 @@ object MongoDBConnection {
 
 object MongoDBConnectionImplicits {
 
-  val defaultAwaitTime = Duration(30, TimeUnit.SECONDS)
+  private val defaultAwaitTime = Duration.Inf
 
   implicit class DocumentObservable[C](val observable: Observable[Document]) extends ImplicitObservable[Document] {
     override val converter: (Document) => String = (doc) => doc.toJson

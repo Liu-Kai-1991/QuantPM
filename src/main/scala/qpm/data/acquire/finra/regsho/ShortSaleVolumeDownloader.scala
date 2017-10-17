@@ -1,6 +1,6 @@
 package qpm.data.acquire.finra.regsho
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneId}
 
 import qpm.system._
 import org.kohsuke.args4j.{Option => CmdOption}
@@ -8,8 +8,12 @@ import qpm.data.connection.MongoDBConnectionImplicits._
 
 import scala.collection.parallel.ForkJoinTaskSupport
 import java.util.concurrent.ForkJoinPool
+
+import org.mongodb.scala.model.{Accumulators, Filters}
+
 import scala.collection.immutable._
 import qpm.data.acquire.HttpClientUtil
+import org.mongodb.scala.model.Aggregates._
 
 import scala.util.Try
 
@@ -18,13 +22,20 @@ object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
   var toDate: LocalDate = LocalDate.now()
   @CmdOption(name = "-from", required = false, usage = "yyyyMMdd", handler = classOf[LocalDateOptionHandler])
   var fromDate: Option[LocalDate] = None
+  @CmdOption(name = "--fromLast", required = false)
+  var fromLast: Boolean = false
   @CmdOption(name = "-threadNum", required = false, usage = "Integer")
   var threadNum: Int = 1
 }
 
 object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmdLine) with Log{
   val toDate = cmdLine.toDate
-  val fromDate = cmdLine.fromDate.getOrElse(cmdLine.toDate)
+  val fromDate = if (cmdLine.fromLast) {
+    val maxDateDoc = RegShoRecord.rawCollection.aggregate(List(group(null, Accumulators.max("maxDate", "$date")))).headResult
+    maxDateDoc.getDate("maxDate").toInstant.atZone(ZoneId.systemDefault).toLocalDate
+  }
+  else
+    cmdLine.fromDate.getOrElse(cmdLine.toDate)
 
   execute(fromDate, toDate)
 
@@ -60,4 +71,9 @@ object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmd
         }
     }
   }
+}
+
+object InvalideMaxDate extends App{
+  val maxDateDoc = RegShoRecord.rawCollection.aggregate(List(group(null, Accumulators.max("maxDate", "$date")))).headResult
+  RegShoRecord.rawCollection.deleteMany(Filters.equal("date", maxDateDoc.getDate("maxDate"))).printResults()
 }

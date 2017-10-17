@@ -6,7 +6,7 @@ import java.util.Date
 
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
-import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.{Document, MongoCollection}
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
@@ -43,6 +43,8 @@ object RegShoRecord extends StorableCompanion[RegShoRecord]{
   lazy val codecRegistry: CodecRegistry = fromRegistries(fromProviders(classOf[RegShoRecord]), DEFAULT_CODEC_REGISTRY )
   lazy val collection: MongoCollection[RegShoRecord] =
     MongoDBConnection.getDefaultDatabase.withCodecRegistry(codecRegistry).getCollection(name)
+  lazy val rawCollection: MongoCollection[Document] =
+    MongoDBConnection.getDefaultDatabase.getCollection(name)
   def countInDateAndMarket(date: Date, market: String): Long =
     collection.count(and(equal("date", date), equal("market", market))).headResult
 }
