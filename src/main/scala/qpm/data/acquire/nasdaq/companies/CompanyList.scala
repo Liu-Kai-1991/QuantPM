@@ -1,6 +1,5 @@
 package qpm.data.acquire.nasdaq.companies
 
-import java.time.LocalDate
 import java.util.{Calendar, Date}
 
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
