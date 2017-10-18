@@ -11,9 +11,10 @@ import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
+import qpm.data.{Storable, StorableCompanion}
 import qpm.data.acquire.HttpClientUtil
 import qpm.data.connection.MongoDBConnection
-import qpm.system.{Log, Storable, StorableCompanion}
+import qpm.system.Log
 import qpm.data.connection.MongoDBConnectionImplicits._
 
 import scala.collection.immutable._

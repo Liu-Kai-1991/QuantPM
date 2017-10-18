@@ -8,9 +8,10 @@ import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
+import qpm.data.{Storable, StorableCompanion}
 import qpm.data.acquire.HttpClientUtil
 import qpm.data.connection.MongoDBConnection
-import qpm.system.{Log, Storable, StorableCompanion}
+import qpm.system.Log
 
 import scala.util.Try
 import scala.collection.immutable._
@@ -21,7 +22,10 @@ case class NasdaqCompanyInfo(
   rawTimeZoneOffset: Long,
   records: List[NasdaqCompanyRecord],
   _id: ObjectId
-) extends Storable
+) extends Storable{
+  override def toString: String = s"NasdaqCompanyInfo(\n$timeStamp,\n$timeZone,\n$rawTimeZoneOffset,\nList(" +
+    records.mkString("\n") + "))"
+}
 
 object NasdaqCompanyInfo extends StorableCompanion[NasdaqCompanyInfo]{
   def apply(

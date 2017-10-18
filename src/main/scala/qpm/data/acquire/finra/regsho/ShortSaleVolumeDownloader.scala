@@ -17,15 +17,13 @@ import org.mongodb.scala.model.Aggregates._
 
 import scala.util.Try
 
-object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine{
+object ShortSaleVolumeDownloaderCmdLine extends QuantPMCmdLine with MultiThreadCmdLine {
   @CmdOption(name = "-to", required = false, usage = "yyyyMMdd", handler = classOf[LocalDateHandler])
   var toDate: LocalDate = LocalDate.now()
   @CmdOption(name = "-from", required = false, usage = "yyyyMMdd", handler = classOf[LocalDateOptionHandler])
   var fromDate: Option[LocalDate] = None
   @CmdOption(name = "--fromLast", required = false)
   var fromLast: Boolean = false
-  @CmdOption(name = "-threadNum", required = false, usage = "Integer")
-  var threadNum: Int = 1
 }
 
 object ShortSaleVolumeDownloader extends QuantPMApp(ShortSaleVolumeDownloaderCmdLine) with Log{

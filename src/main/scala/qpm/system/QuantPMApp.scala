@@ -7,10 +7,16 @@ import org.kohsuke.args4j.spi.{OneArgumentOptionHandler, Setter}
 import org.kohsuke.args4j.{CmdLineException, CmdLineParser, OptionDef}
 
 import scala.collection.JavaConverters._
+import org.kohsuke.args4j.{Option => CmdOption}
 
 trait QuantPMCmdLine {
   type LocalDateHandler = QuantPMCmdLine.LocalDateHandler
   type LocalDateOptionHandler = QuantPMCmdLine.LocalDateOptionHandler
+}
+
+trait MultiThreadCmdLine {
+  @CmdOption(name = "-threadNum", required = false, usage = "Integer")
+  var threadNum: Int = 1
 }
 
 object QuantPMCmdLine {

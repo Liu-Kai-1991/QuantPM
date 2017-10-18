@@ -11,8 +11,6 @@ object CompanyListDownloader extends App with Log{
   def execute(): Unit = {
     val (statusCode, nasdaqCompanyInfo) = CompanyList.getData(CompanyList.byRegion)
     if (statusCode<300) {
-      println(nasdaqCompanyInfo.get)
-
       val results = Try{NasdaqCompanyInfo.put(nasdaqCompanyInfo.get).results}.toEither
       results match {
         case Left(e) =>
