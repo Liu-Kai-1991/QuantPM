@@ -1,7 +1,5 @@
 package qpm.data.connection
 
-import java.util.concurrent.TimeUnit
-
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase, Observable}
 import qpm.system.configuration.MongoDBConfiguration

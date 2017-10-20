@@ -12,8 +12,8 @@ import java.util.concurrent.ForkJoinPool
 import org.mongodb.scala.model.{Accumulators, Filters}
 
 import scala.collection.immutable._
-import qpm.data.acquire.HttpClientUtil
 import org.mongodb.scala.model.Aggregates._
+import qpm.data.connection.HttpClientUtil
 
 import scala.util.Try
 

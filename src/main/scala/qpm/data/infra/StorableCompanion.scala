@@ -1,9 +1,9 @@
-package qpm.data
+package qpm.data.infra
 
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.conversions.Bson
-import org.mongodb.scala.model.{Filters, InsertManyOptions}
+import org.mongodb.scala.model.InsertManyOptions
 import org.mongodb.scala.{Completed, MongoCollection, SingleObservable}
 
 import scala.collection.immutable._

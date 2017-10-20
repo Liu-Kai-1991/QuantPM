@@ -1,69 +1,61 @@
 package qpm.data.acquire.google.intraday
 
-import java.util.concurrent.Executors
+import java.time.{Instant, ZoneId}
 
 import org.kohsuke.args4j.{Option => CmdOption}
 import org.mongodb.scala.model.Filters
 import qpm.data.acquire.nasdaq.companies.NasdaqCompanyInfo
-import qpm.system.{Log, MultiThreadCmdLine, QuantPMApp, QuantPMCmdLine}
 import org.mongodb.scala.model.Sorts._
 import qpm.data.connection.MongoDBConnectionImplicits._
 import qpm.data.general.NasdaqSymbol
+import qpm.system._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Try
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Random, Try}
 
-object GoogleIntraDayPriceDownloaderCmdLine extends QuantPMCmdLine with MultiThreadCmdLine{
+object GoogleIntraDayPriceDownloaderCmdLine extends QuantPMCmdLine{
   @CmdOption(name = "-n", required = false, usage = "number of days")
-  var numDays: Int = 1
+  var numDays: Int = 10
 }
-
 
 object GoogleIntraDayPriceDownloader extends QuantPMApp(GoogleIntraDayPriceDownloaderCmdLine) with Log{
 
-  val numWorkers = sys.runtime.availableProcessors
-  log.info(s"Number of threads $numWorkers")
-  val pool = Executors.newFixedThreadPool(numWorkers)
-  implicit val ec: ExecutionContext = ExecutionContext.fromExecutorService(pool)
-
+  private val estZone = ZoneId.of("US/Eastern")
 
   val symbolList = NasdaqCompanyInfo.collection.find().sort(descending("timeStamp")).limit(1)
     .headResult.records.map(_.symbol)
-  val tasks = symbolList
-  val resultFutures = tasks.map{
+  val symbolPriorityMap = GoogleIntraDay.symbolPriorityMap
+  val tasks = symbolList.map{
     symbol =>
       val googleSymbol = NasdaqSymbol(symbol).toGoogleFinanceSymbol
-      Try(IntraDayPrice.getData(googleSymbol, 1)).toEither match {
-        case Left(e) =>
-          log.error(s"Download data for $googleSymbol failed")
-          e.getStackTrace.foreach(trace => log.error(trace.toString))
-          Future(Seq())
-        case Right((statusCode,  seq)) =>
-          if (statusCode>= 300){
-            log.error(s"Download data for $googleSymbol failed with code $statusCode")
-            Future(Seq())
-          } else {
-            val resultFutures = seq.map{
-              googleIntraDay =>
-                GoogleIntraDay.putIfNotExsist(googleIntraDay, Filters.and(
-                  Filters.eq("symbol", googleIntraDay.symbol),
-                  Filters.eq("date", googleIntraDay.date)
-                ))
+      (googleSymbol, symbolPriorityMap.getOrElse(googleSymbol, Int.MaxValue))
+  }.sortBy(- _._2)
+
+  tasks.foreach{
+    case (googleSymbol, priority) =>
+      val currentHour = Instant.now.atZone(estZone).getHour
+      if (currentHour <= 7 || currentHour >= 18) {
+        Thread.sleep(5000 + Random.nextInt(5000))
+        log.info(s"Start working with $googleSymbol (priority $priority), current hour $currentHour, numDays ${cmdLine.numDays}")
+        Try(IntraDayPrice.getData(googleSymbol, cmdLine.numDays)).toEither match {
+          case Left(e) =>
+            log.error(s"Download data for $googleSymbol failed")
+            e.getStackTrace.foreach(trace => log.error(trace.toString))
+          case Right((statusCode,  seq)) =>
+            if (statusCode>= 300){
+              log.error(s"Download data for $googleSymbol failed with code $statusCode")
+            } else {
+              log.info(s"Download data for $googleSymbol good")
+              seq.foreach{
+                googleIntraDay =>
+                  val res = GoogleIntraDay.putIfNotExsist(googleIntraDay, Filters.and(
+                    Filters.eq("symbol", googleIntraDay.symbol),
+                    Filters.eq("date", googleIntraDay.date)
+                  )).block.map(_.toFuture.block)
+                  log.info(res.toString)
+              }
             }
-            val futureResults = Future.sequence(resultFutures).map(_.flatten)
-            futureResults
-          }
+        }
       }
   }
-  val futureResults = Future.sequence(resultFutures).map(_.flatten)
-  val results = Await.result(futureResults, Duration.Inf)
-  Await.result(Future.sequence(results.map{
-    result =>
-      result.toFuture.map{
-        complete =>
-          println(complete)
-          complete
-      }
-  }), Duration.Inf)
 }

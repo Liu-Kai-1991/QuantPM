@@ -3,18 +3,19 @@ package qpm.data.acquire.google.intraday
 import java.time.{Instant, ZoneId}
 import java.util.Date
 
+import com.mongodb.client.model.Aggregates
 import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.{Document, MongoCollection}
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import qpm.data.acquire.HttpClientUtil
 import org.mongodb.scala.bson.codecs.Macros._
-import qpm.data.{Storable, StorableCompanion}
-import qpm.data.connection.MongoDBConnection
+import org.mongodb.scala.model.{Accumulators, Filters, Projections, Sorts}
+import qpm.data.connection.{HttpClientUtil, MongoDBConnection}
 import qpm.data.general.GoogleFinanceSymbol
-import qpm.data.Storable
 import qpm.data.general.DateUtil._
+import qpm.data.infra.{Storable, StorableCompanion}
+import qpm.data.connection.MongoDBConnectionImplicits._
 
 case class GoogleIntraDay(
   symbol: String,
@@ -55,11 +56,33 @@ object GoogleIntraDay extends StorableCompanion[GoogleIntraDay]{
     MongoDBConnection.getDefaultDatabase.withCodecRegistry(codecRegistry).getCollection(name)
   lazy val rawCollection: MongoCollection[Document] =
     MongoDBConnection.getDefaultDatabase.getCollection(name)
+
+  def symbolPriorityMap: Map[GoogleFinanceSymbol, Int] = {
+    val qryRes = rawCollection.aggregate(List(
+      Aggregates.group("$symbol", Accumulators.max("maxDate", "$date")))).results
+    val currentMilli = Instant.now.toEpochMilli
+    qryRes.map(doc => doc.getString("_id") -> doc.getDate("maxDate")).map{
+      case (symbol, date) =>
+        GoogleFinanceSymbol(symbol) -> ((currentMilli - date.toInstant.toEpochMilli)/86400000).toInt
+    }.toMap
+  }
 }
 
 object IntraDayPrice {
+  
+  private val domainList = new {
+    private val list = Vector("co.uk", "hk", "cn", "ca", "com")
+    private var pointer = list.iterator
+
+    def nextDomain: String =
+      if (pointer.hasNext) pointer.next() else {
+        pointer = list.iterator
+        pointer.next()
+      }
+  }
+
   private def getUrl(symbol: GoogleFinanceSymbol, numDays: Int) =
-    s"https://finance.google.com/finance/getprices?q=$symbol&p=${numDays}d&f=d,c,v,k,o,h,l&i=60"
+    s"https://finance.google.${domainList.nextDomain}/finance/getprices?q=$symbol&p=${numDays}d&f=d,c,v,k,o,h,l&i=60"
 
   private case class HeadData(
     exchange: String,
@@ -87,6 +110,7 @@ object IntraDayPrice {
   }
 
   private val estZone = ZoneId.of("US/Eastern")
+  private def estZoneEodYesterday = Instant.now.minusDays(1).toEodDate(estZone)
 
   private def parseData(data: String, head: HeadData, symbol: GoogleFinanceSymbol): GoogleIntraDay = {
     val rowElements = data.split('\n').map(_.split(',')).toList
@@ -105,9 +129,16 @@ object IntraDayPrice {
       initialTimeStamp, localDate, minutes, closePrices, highPrices, lowPrices, openPrices, volumes)
   }
 
+  private def emptyData(symbol: GoogleFinanceSymbol): GoogleIntraDay = {
+    GoogleIntraDay(symbol.symbol, "", -1, -1, -1,
+      -1, estZoneEodYesterday, List(), List(), List(), List(), List(), List())
+  }
+
   def parseResponse(content: String, symbol: GoogleFinanceSymbol): Seq[GoogleIntraDay] = {
     val infos = content.split('a')
-    if (infos.length < 2) Seq() else {
+    if (infos.length == 1) {
+      Seq(emptyData(symbol))
+    } else {
       val headData = parseHead(infos.head)
       infos.drop(1).map(data => parseData(data, headData, symbol))
     }

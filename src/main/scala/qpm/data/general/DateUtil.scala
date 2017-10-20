@@ -1,6 +1,6 @@
 package qpm.data.general
 
-import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.time.{Instant, Period, ZoneId, ZonedDateTime}
 import java.util.Date
 
 object DateUtil {
@@ -23,5 +23,8 @@ object DateUtil {
 
     def toSodDate(zoneId: ZoneId): Date =
       Date.from(toSod(zoneId))
+
+    def minusDays(days: Int): Instant =
+      instant.minus(Period.ofDays(days))
   }
 }

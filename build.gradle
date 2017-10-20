@@ -32,6 +32,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.3'
+
+    // https://mvnrepository.com/artifact/org.scala-lang.modules/scala-xml_2.12
+    compile group: 'org.scala-lang.modules', name: 'scala-xml_2.12', version: '1.0.6'
 }
 
 mainClassName = "qpm.system.Welcome"
