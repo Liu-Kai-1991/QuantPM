@@ -53,6 +53,13 @@ task companyListDownloader(type: CreateStartScripts) {
     classpath = jar.outputs.files + project.configurations.runtime
 }
 
+task googleIntraDayPriceDownloader(type: CreateStartScripts) {
+    mainClassName = "qpm.data.acquire.google.intraday.GoogleIntraDayPriceDownloader"
+    applicationName = "GoogleIntraDayPriceDownloader"
+    outputDir = new File(project.buildDir, 'scripts')
+    classpath = jar.outputs.files + project.configurations.runtime
+}
+
 applicationDistribution.into("bin") {
     from(shortSaleVolumeDownloader)
     from(companyListDownloader)
