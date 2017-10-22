@@ -1,6 +1,6 @@
 package qpm.data.acquire.google.intraday
 
-import java.time.{Instant, ZoneId}
+import java.time.{Instant, LocalDate, ZoneId}
 import java.util.Date
 
 import com.mongodb.client.model.Aggregates
@@ -63,7 +63,16 @@ object GoogleIntraDay extends StorableCompanion[GoogleIntraDay]{
     val currentMilli = Instant.now.toEpochMilli
     qryRes.map(doc => doc.getString("_id") -> doc.getDate("maxDate")).map{
       case (symbol, date) =>
-        GoogleFinanceSymbol(symbol) -> ((currentMilli - date.toInstant.toEpochMilli)/86400000).toInt
+        GoogleFinanceSymbol(symbol) -> ((currentMilli - date.toInstant.toEpochMilli)/3600000).toInt
+    }.toMap
+  }
+
+  def symbolNewestDateMap(zoneId: ZoneId): Map[GoogleFinanceSymbol, LocalDate] = {
+    val qryRes = rawCollection.aggregate(List(
+      Aggregates.group("$symbol", Accumulators.max("maxDate", "$date")))).results
+    qryRes.map(doc => doc.getString("_id") -> doc.getDate("maxDate")).map{
+      case (symbol, date) =>
+        GoogleFinanceSymbol(symbol) -> date.toInstant.atZone(zoneId).toLocalDate
     }.toMap
   }
 }

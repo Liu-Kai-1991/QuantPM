@@ -1,6 +1,6 @@
 package qpm.data.acquire.google.intraday
 
-import java.time.{Instant, ZoneId}
+import java.time.{DayOfWeek, Instant, LocalDate, ZoneId}
 
 import org.kohsuke.args4j.{Option => CmdOption}
 import org.mongodb.scala.model.Filters
@@ -24,19 +24,30 @@ object GoogleIntraDayPriceDownloader extends QuantPMApp(GoogleIntraDayPriceDownl
 
   val symbolList = NasdaqCompanyInfo.collection.find().sort(descending("timeStamp")).limit(1)
     .headResult.records.map(_.symbol)
-  val symbolPriorityMap = GoogleIntraDay.symbolPriorityMap
+  val symbolNewestDateMap = GoogleIntraDay.symbolNewestDateMap(estZone)
   val tasks = symbolList.map{
     symbol =>
       val googleSymbol = NasdaqSymbol(symbol).toGoogleFinanceSymbol
-      (googleSymbol, symbolPriorityMap.getOrElse(googleSymbol, Int.MaxValue))
-  }.sortBy(- _._2)
+      (googleSymbol, symbolNewestDateMap.getOrElse(googleSymbol, LocalDate.MIN))
+  }.sortBy(_._2.toEpochDay)
 
-  tasks.foreach{
-    case (googleSymbol, priority) =>
-      val currentHour = Instant.now.atZone(estZone).getHour
-      if (currentHour <= 7 || currentHour >= 18) {
+  def checkDateTime(maxDate: LocalDate): Boolean = {
+    val currentZonedDateTime = Instant.now.atZone(estZone)
+    val currentHour = currentZonedDateTime.getHour
+    val currentWeekday = currentZonedDateTime.getDayOfWeek
+    val currentDate = currentZonedDateTime.toLocalDate
+    currentWeekday match {
+      case DayOfWeek.SATURDAY => currentDate.minusDays(1).isAfter(maxDate)
+      case DayOfWeek.SUNDAY => currentDate.minusDays(2).isAfter(maxDate)
+      case others => (currentHour <= 7 || currentHour >= 18) && currentDate.isAfter(maxDate)
+    }
+  }
+
+  tasks.zipWithIndex.foreach{
+    case ((googleSymbol, maxDate), taskIndex) =>
+      if (checkDateTime(maxDate) ) {
         Thread.sleep(5000 + Random.nextInt(5000))
-        log.info(s"Start working with $googleSymbol (priority $priority), current hour $currentHour, numDays ${cmdLine.numDays}")
+        log.info(s"Start working with $taskIndex task: $googleSymbol (maxDate $maxDate), numDays ${cmdLine.numDays}")
         Try(IntraDayPrice.getData(googleSymbol, cmdLine.numDays)).toEither match {
           case Left(e) =>
             log.error(s"Download data for $googleSymbol failed")
